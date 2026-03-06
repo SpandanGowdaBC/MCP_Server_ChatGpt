@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: mcp-vector-search
+    env: docker
+    plan: free
+    region: oregon
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false # Set in Render UI
+      - key: VECTOR_STORE_ID
+        sync: false # Set in Render UI
+    healthCheckPath: /
