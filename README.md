@@ -6,6 +6,8 @@ A Model Context Protocol (MCP) server that provides semantic search and document
 
 - **`search` tool**: Perform semantic searches against an OpenAI Vector Store.
 - **`fetch` tool**: Retrieve full document content and metadata for analysis and citation.
+- **`upload_file` tool**: Upload text content directly to your vector store.
+- **`delete_file` tool**: Remove documents by their ID.
 - **Remote-ready**: Built with Python and FastMCP, optimized for deployment on Render.
 
 ## Deployment to Render

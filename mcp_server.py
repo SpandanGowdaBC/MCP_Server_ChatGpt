@@ -175,6 +175,91 @@ def create_server():
         logger.info(f"Fetched vector store file: {id}")
         return result
 
+    @mcp.tool()
+    async def upload_file(filename: str, content: str) -> Dict[str, Any]:
+        """
+        Upload a new text file to the vector store.
+
+        This tool creates a new file in OpenAI with the provided content and
+        adds it to the configured vector store for immediate searchability.
+
+        Args:
+            filename: Name of the file to create (e.g., 'notes.txt').
+            content: The text content of the file.
+
+        Returns:
+            Information about the created file and its status.
+        """
+        if not filename or not content:
+            raise ValueError("Filename and content are required")
+
+        if not openai_client:
+            raise ValueError("OpenAI API key is required")
+
+        logger.info(f"Uploading new file: {filename}")
+
+        # Create a temporary file to upload
+        import tempfile
+        with tempfile.NamedTemporaryFile(mode='w+', suffix='.txt', delete=False) as tmp:
+            tmp.write(content)
+            tmp_path = tmp.name
+
+        try:
+            # Upload the file to OpenAI
+            with open(tmp_path, 'rb') as f:
+                file_batch = openai_client.vector_stores.file_batches.upload_and_poll(
+                    vector_store_id=VECTOR_STORE_ID,
+                    files=[f]
+                )
+
+            logger.info(f"File batch status: {file_batch.status}")
+
+            # Get the file ID from the batch (assuming one file)
+            # Note: We might need to list files in the vector store to get the exact ID 
+            # if upload_and_poll doesn't return individual file IDs directly in a simple way.
+            # For simplicity, we return the batch status.
+            
+            return {
+                "status": file_batch.status,
+                "file_counts": file_batch.file_counts.__dict__,
+                "vector_store_id": VECTOR_STORE_ID
+            }
+
+        finally:
+            import os
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+
+    @mcp.tool()
+    async def delete_file(file_id: str) -> Dict[str, str]:
+        """
+        Delete a file from the vector store and OpenAI storage.
+
+        Args:
+            file_id: The unique ID of the file to delete (e.g., 'file-xxx').
+
+        Returns:
+            A confirmation message.
+        """
+        if not file_id:
+            raise ValueError("File ID is required")
+
+        if not openai_client:
+            raise ValueError("OpenAI API key is required")
+
+        logger.info(f"Deleting file {file_id} from vector store {VECTOR_STORE_ID}")
+
+        # Remove from vector store
+        openai_client.vector_stores.files.delete(
+            vector_store_id=VECTOR_STORE_ID,
+            file_id=file_id
+        )
+
+        # Delete from OpenAI general storage
+        openai_client.files.delete(file_id)
+
+        return {"message": f"Successfully deleted file {file_id}"}
+
     return mcp
 
 
