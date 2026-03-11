@@ -24,10 +24,12 @@ VECTOR_STORE_ID = os.environ.get("VECTOR_STORE_ID", "")
 openai_client = OpenAI()
 
 server_instructions = """
-This MCP server provides search and document retrieval capabilities
-for ChatGPT Apps and deep research. Use the search tool to find relevant documents
-based on keywords, then use the fetch tool to retrieve complete
-document content with citations.
+This MCP server provides management and search capabilities for OpenAI resources.
+- Management: Use list_agents, list_vector_stores, and list_store_files to collect JSON data.
+- Search: Use the search tool to find relevant documents.
+- Retrieval: Use the fetch tool to retrieve complete document content.
+- Ingestion: Use upload_file and delete_file to manage your content.
+- Metadata: Use get_app_data for application state.
 """
 
 
@@ -174,6 +176,105 @@ def create_server():
 
         logger.info(f"Fetched vector store file: {id}")
         return result
+
+    @mcp.tool()
+    async def list_agents() -> Dict[str, Any]:
+        """
+        List all OpenAI Assistants (Agents) in the account.
+        
+        Returns:
+            JSON object containing a list of assistants with their names, 
+            IDs, instructions, and models.
+        """
+        try:
+            assistants = openai_client.beta.assistants.list(limit=50)
+            agents = []
+            for a in assistants.data:
+                agents.append({
+                    "id": a.id,
+                    "name": a.name,
+                    "model": a.model,
+                    "instructions": a.instructions[:200] + "..." if a.instructions and len(a.instructions) > 200 else a.instructions,
+                    "created_at": a.created_at
+                })
+            return {"agents": agents, "count": len(agents)}
+        except Exception as e:
+            logger.error(f"Error listing agents: {e}")
+            return {"error": str(e)}
+
+    @mcp.tool()
+    async def list_vector_stores() -> Dict[str, Any]:
+        """
+        List all available OpenAI Vector Stores.
+        
+        Returns:
+            JSON object containing vector stores with IDs, names, 
+            and file counts.
+        """
+        try:
+            stores_response = openai_client.beta.vector_stores.list(limit=50)
+            stores = []
+            for s in stores_response.data:
+                stores.append({
+                    "id": s.id,
+                    "name": s.name,
+                    "file_counts": s.file_counts.__dict__ if hasattr(s, 'file_counts') else None,
+                    "status": s.status,
+                    "created_at": s.created_at
+                })
+            return {"vector_stores": stores, "count": len(stores)}
+        except Exception as e:
+            logger.error(f"Error listing vector stores: {e}")
+            return {"error": str(e)}
+
+    @mcp.tool()
+    async def list_store_files(vector_store_id: str = None) -> Dict[str, Any]:
+        """
+        List all files within a specific vector store.
+        
+        Args:
+            vector_store_id: The ID of the vector store. Defaults to the one in ENV.
+            
+        Returns:
+            JSON object containing file details within the store.
+        """
+        vs_id = vector_store_id or VECTOR_STORE_ID
+        if not vs_id:
+            return {"error": "No vector store ID provided and VECTOR_STORE_ID not set in environment"}
+            
+        try:
+            files_response = openai_client.beta.vector_stores.files.list(vector_store_id=vs_id, limit=100)
+            files = []
+            for f in files_response.data:
+                files.append({
+                    "id": f.id,
+                    "status": f.status,
+                    "created_at": f.created_at,
+                    "vector_store_id": vs_id
+                })
+            return {"files": files, "vector_store_id": vs_id, "count": len(files)}
+        except Exception as e:
+            logger.error(f"Error listing files: {e}")
+            return {"error": str(e)}
+
+    @mcp.tool()
+    async def get_app_data() -> Dict[str, Any]:
+        """
+        Return configuration and status data about this MCP Application.
+        
+        Returns:
+            JSON object with environment info, active store ID, and server status.
+        """
+        return {
+            "app_name": "MCP Vector Search Server",
+            "active_vector_store_id": VECTOR_STORE_ID,
+            "transport": "SSE",
+            "openai_status": "Initialized" if openai_client else "Missing API Key",
+            "available_tools": [
+                "search", "fetch", "upload_file", "delete_file", 
+                "list_agents", "list_vector_stores", "list_store_files", "get_app_data"
+            ]
+        }
 
     @mcp.tool()
     async def upload_file(filename: str, content: str) -> Dict[str, Any]:

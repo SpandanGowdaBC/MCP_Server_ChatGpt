@@ -5,10 +5,13 @@ A Model Context Protocol (MCP) server that provides semantic search and document
 ## Features
 
 - **`search` tool**: Perform semantic searches against an OpenAI Vector Store.
-- **`fetch` tool**: Retrieve full document content and metadata for analysis and citation.
-- **`upload_file` tool**: Upload text content directly to your vector store.
-- **`delete_file` tool**: Remove documents by their ID.
-- **Remote-ready**: Built with Python and FastMCP, optimized for deployment on Render.
+- **`fetch` tool**: Retrieve full document content and metadata.
+- **`list_agents` tool**: Collect JSON data about all OpenAI Assistants (Agents).
+- **`list_vector_stores` tool**: List available vector stores and their status.
+- **`list_store_files` tool**: Retrieve a JSON manifest of files within a store.
+- **`get_app_data` tool**: Inspect current server configuration and health.
+- **`upload_file` / `delete_file` tools**: Manage vector store content.
+- **Remote-ready**: Optimized for deployment on Render via SSE.
 
 ## Deployment to Render
 
