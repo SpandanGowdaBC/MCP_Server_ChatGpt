@@ -263,7 +263,7 @@ def create_server():
             and file counts.
         """
         try:
-            stores_response = openai_client.beta.vector_stores.list(limit=50)
+            stores_response = openai_client.vector_stores.list(limit=50)
             stores = []
             for s in stores_response.data:
                 stores.append({
@@ -294,7 +294,7 @@ def create_server():
             return {"error": "No vector store ID provided and VECTOR_STORE_ID not set in environment"}
             
         try:
-            files_response = openai_client.beta.vector_stores.files.list(vector_store_id=vs_id, limit=100)
+            files_response = openai_client.vector_stores.files.list(vector_store_id=vs_id, limit=100)
             files = []
             for f in files_response.data:
                 files.append({
@@ -449,7 +449,7 @@ def create_server():
                     results["files"].append({"id": f.id, "filename": f.filename})
             
             # 3. Search Vector Stores
-            stores = openai_client.beta.vector_stores.list(limit=50)
+            stores = openai_client.vector_stores.list(limit=50)
             for s in stores.data:
                 if query in (s.name or "").lower() or query in s.id.lower():
                     results["vector_stores"].append({"id": s.id, "name": s.name})
